@@ -1,6 +1,5 @@
 name: SSH Login Every 3 Days
 
-# 定义触发条件：每三天触发一次
 on:
   schedule:
     - cron: '0 0 */3 * *'  # 每三天的 00:00 触发
@@ -9,6 +8,10 @@ on:
 jobs:
   ssh-login:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        server: [1, 2]  # 可以根据需要添加更多服务器编号
+      fail-fast: false  # 即使一个服务器失败，也继续处理其他服务器
 
     steps:
     - name: Checkout code
@@ -20,33 +23,33 @@ jobs:
         echo "TELEGRAM_BOT_TOKEN=${{ secrets.TELEGRAM_BOT_TOKEN }}" >> $GITHUB_ENV
     
     - name: Get current time in UTC
-      id: get-time  # 设置一个ID来存储时间
+      id: get-time
       run: echo "TIME=$(date -u '+%Y-%m-%d %H:%M:%S')" >> $GITHUB_ENV
 
     - name: Set up SSH
       run: |
         mkdir -p ~/.ssh
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        echo "${{ secrets[format('SSH_PRIVATE_KEY_{0}', matrix.server)] }}" > ~/.ssh/id_rsa
         chmod 600 ~/.ssh/id_rsa
 
     - name: SSH into server
       id: ssh-step
       run: |
-        ssh -o StrictHostKeyChecking=no ${{ secrets.USERNAME }}@${{ secrets.SERVER_IP }} "
+        ssh -o StrictHostKeyChecking=no ${{ secrets[format('USERNAME_{0}', matrix.server)] }}@${{ secrets[format('SERVER_IP_{0}', matrix.server)] }} "
           mkdir -p ~/log && \
           echo '${{ env.TIME }} Logged in via GitHub Action.' >> ~/log/keep-action.log
         "
 
     - name: Send Telegram notification on success
-      if: success() && env.TELEGRAM_CHAT_ID != '' && env.TELEGRAM_BOT_TOKEN != ''  # 如果 SSH 登录成功
+      if: success() && env.TELEGRAM_CHAT_ID != '' && env.TELEGRAM_BOT_TOKEN != ''
       run: |
         curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="UTC ${{ env.TIME }} : ✅ SSH login to server( ${{ secrets.SERVER_IP }} ) was successful!"
+          -d text="UTC ${{ env.TIME }} : SSH login to server ${{ matrix.server }}( ${{ secrets[format('SERVER_IP_{0}', matrix.server)] }} ) was successful!"
 
     - name: Send Telegram notification on failure
-      if: failure() && env.TELEGRAM_CHAT_ID != '' && env.TELEGRAM_BOT_TOKEN != ''  # 如果 SSH 登录失败
+      if: failure() && env.TELEGRAM_CHAT_ID != '' && env.TELEGRAM_BOT_TOKEN != ''
       run: |
         curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
           -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-          -d text="UTC ${{ env.TIME }} : ❌ SSH login to server( ${{ secrets.SERVER_IP }} ) failed!"
+          -d text="UTC ${{ env.TIME }} : SSH login to server ${{ matrix.server }}( ${{ secrets[format('SERVER_IP_{0}', matrix.server)] }} ) failed!"
