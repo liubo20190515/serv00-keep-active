@@ -24,3 +24,23 @@
 | SSH_PRIVATE_KEY | your private key |
 | TELEGRAM_BOT_TOKEN | your telegram bot token |
 | TELEGRAM_CHAT_ID | your telegram chat id |  
+
+现在我来解释一下需要配置的 Repository secrets：
+
+对于每个服务器（假设编号为1、2、3），你需要配置以下 secrets：
+
+服务器1的配置：
+SERVER_IP_1: 第一个服务器的IP地址
+USERNAME_1: 第一个服务器的SSH用户名
+SSH_PRIVATE_KEY_1: 第一个服务器的SSH私钥
+服务器2的配置：
+SERVER_IP_2: 第二个服务器的IP地址
+USERNAME_2: 第二个服务器的SSH用户名
+SSH_PRIVATE_KEY_2: 第二个服务器的SSH私钥
+服务器3的配置：
+SERVER_IP_3: 第三个服务器的IP地址
+USERNAME_3: 第三个服务器的SSH用户名
+SSH_PRIVATE_KEY_3: 第三个服务器的SSH私钥
+Telegram 配置（共用）：
+TELEGRAM_BOT_TOKEN: Telegram机器人的token
+TELEGRAM_CHAT_ID: Telegram聊天ID
